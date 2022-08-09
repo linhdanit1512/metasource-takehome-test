@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+</head>
+
+<body>
+  <div id="main">
+    <div id="your-video" class="group-media">
+      <div class="group-media-container">
+        <div class="group-media__thumbnails"></div>
+        <div class="group-media-shadow--top"></div>
+        <div class="video-title"></div>
+        <video class="group-media__video" autoplay=""></video>
+
+
+        <div class="group-media-shadow--bottom"></div>
+        <div class="group-media__control">
+
+          <div class="group-media__control-seekbar">
+            <div class="group-media__control-timer"></div>
+            <div class="group-media__control-timer-loaded"></div>
+          </div>
+
+          <div class="group-media__control-icon">
+            <div class="pull-left group-icon">
+              <button class="btn-icon svg-icon--pause"></button>
+              <button class="btn-icon svg-icon--volume">
+                <div class="d-flex align-center">
+                  <div class="icon"></div>
+                  <div class="volume-control">
+                    <input type="range" id="volume" name="volume" min="0"
+                      max="10">
+                  </div>
+                </div>
+              </button>
+              <span class="video-timer">
+                <span class="video-timer__current"></span>
+                <span class="video-timer__delimiter">/</span>
+                <span class="video-timer__video-length"></span>
+              </span>
+            </div>
+            <div class="pull-right">
+              <button class="btn-icon svg-icon--fullscreen">
+                <svg viewBox="0 0 24 24">
+                  <path fill="currentColor"
+                    d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M10,17V19H5V14H7V17H10Z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="group-form">
+      <div class="form-input">
+        <label class="form-label">Video title</label>
+        <input name="video-title" type="text" class="form-control"
+          value="Take-Home Test for Frontend Developers">
+      </div>
+      <div class="form-input">
+        <label class="form-label">Thumbnail</label>
+        <input name="thumbnail" type="file" accept="image/png,image/jpeg"
+          multiple class="form-control">
+      </div>
+      <div class="form-input">
+        <label class="form-label">Video</label>
+        <input name="video" type="file" accept="video/mp4, video/ogg"
+          class="form-control">
+      </div>
+      <div class="form-input">
+        <label class="form-label">Thumbnail Show At</label>
+        <input name="show_at" type="number" value="4" class="form-control">
+      </div>
+
+      <div class="form-input">
+        <label class="form-label">Thumbnail Show Duration</label>
+        <input name="duration_show" type="number" value="60" class="form-control">
+      </div>
+    </div>
+  </div>
+
+</body>
+
+<script type="text/javascript" src="./main.js"></script>
+
+</html>
