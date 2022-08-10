@@ -24,6 +24,7 @@ function VideoPlayer() {
     isFullScreen: false,
     isAddThumbnail: false,
     mediaId: mediaId,
+    queryId: '#' + mediaId,
     query: {
       videoElem: `#${mediaId} video`,
       containerElem: `#${mediaId} .group-media-container`,
@@ -52,7 +53,7 @@ function VideoPlayer() {
 
   this.bindElem = function () {
     videoElem.setAttribute('src', options.defaultVideo)
-    document.querySelector('#your-video .video-title').innerHTML = options.defaultTitle
+    document.querySelector(options.queryId + ' .video-title').innerHTML = options.defaultTitle
     document.title = options.defaultTitle
   }
 
@@ -82,9 +83,16 @@ function VideoPlayer() {
     // Update seekbar timer & current time
     videoElem.addEventListener('timeupdate', function (e) {
       _setTimer()
-      if (Math.floor(videoElem.currentTime) == options.redDotTime && !options.isAddThumbnail) {
+      if (videoElem.currentTime >= options.redDotTime
+        && videoElem.currentTime < options.redDotTime + options.thumbnailDisplayDuration
+        && !options.isAddThumbnail) {
+
         options.isAddThumbnail = true
         _addThumbnail({ elemId: 'thumbnail-test', thumbnail: _selectedImage || options.defaultThumbnail })
+      } else if ((videoElem.currentTime < options.redDotTime
+        || videoElem.currentTime > options.redDotTime + options.thumbnailDisplayDuration) && options.isAddThumbnail) {
+        options.isAddThumbnail = false
+        _removeAllThumbnail()
       }
     })
 
@@ -109,40 +117,41 @@ function VideoPlayer() {
       //   _showControl(false)
       // }, options.hidePlayerDuration)
     })
-    // Hide controls, title, shadow
 
   }
 
   function _bindControlEvent() {
     // Play/Pause video by button control
-    document.querySelector('#your-video .svg-icon--pause').addEventListener('click', function () {
+    document.querySelector(options.queryId + ' .svg-icon--pause').addEventListener('click', function () {
       _setPause(!videoElem.paused, true)
     })
 
     // Show fullscreen
-    document.querySelector('#your-video .svg-icon--fullscreen').addEventListener('click', function () {
+    document.querySelector(options.queryId + ' .svg-icon--fullscreen').addEventListener('click', function () {
       _setFullscreen(!options.isFullScreen)
     })
 
-    document.querySelector('#your-video .svg-icon--volume .icon').addEventListener('click', function () {
+    document.querySelector(options.queryId + ' .svg-icon--volume .icon').addEventListener('click', function () {
       videoElem.muted = !videoElem.muted
       _setSound(videoElem.muted ? 0 : _volume)
     })
 
-    document.querySelector('#your-video input[name="volume"]').addEventListener('input', function () {
-      console.log(this.value);
+    document.querySelector(options.queryId + ' input[name="volume"]').addEventListener('input', function () {
       _setSound(this.value)
     })
 
     let _timerChangeObj = [
-      '#your-video .group-media__control-seekbar',
-      '#your-video .group-media__control-timer',
-      '#your-video .group-media__control-timer-loaded'
+      options.queryId + ' .group-media__control-seekbar',
+      options.queryId + ' .group-media__control-timer',
+      options.queryId + ' .group-media__control-timer-loaded'
     ]
+    let _dragSeekbar = false, _videoRunning = false;
     _timerChangeObj.forEach((elem) => {
 
+      let element = document.querySelector(elem)
+
       // Change video timer
-      document.querySelector(elem).addEventListener('click', function (e) {
+      element.addEventListener('click', function (e) {
         let width = e.layerX,
           seekbarWidth = _getSeekbarWidth(),
           duration = videoElem.duration;
@@ -152,7 +161,7 @@ function VideoPlayer() {
       })
 
       // Show tooltip timer
-      document.querySelector(elem).addEventListener('mousemove', function (e) {
+      element.addEventListener('mousemove', function (e) {
 
         let width = e.layerX,
           seekbarWidth = _getSeekbarWidth(),
@@ -160,7 +169,7 @@ function VideoPlayer() {
 
         tooltipTime = width / seekbarWidth * duration;
 
-        let tooltip = document.querySelector('#your-video .group-media__control .video-timer-tooltip');
+        let tooltip = document.querySelector(options.queryId + ' .group-media__control .video-timer-tooltip');
         if (!tooltip) {
           tooltip = document.createElement('span')
           controlElem.append(tooltip)
@@ -171,9 +180,45 @@ function VideoPlayer() {
         tooltip.style.left = (width - 15) + 'px'
       })
 
-      document.querySelector(elem).addEventListener('mouseleave', function () {
-        document.querySelector('#your-video .group-media__control .video-timer-tooltip').style.display = 'none'
+      element.addEventListener('mouseleave', function () {
+        document.querySelector(options.queryId + ' .group-media__control .video-timer-tooltip').style.display = 'none'
       })
+    })
+
+    document.addEventListener('mousedown', function (e) {
+      if (e.target.className.toString().includes('group-media__control-seekbar') || e.target.className.toString().includes('group-media__control-timer')) {
+        _dragSeekbar = true
+      }
+    })
+
+    document.addEventListener('mouseup', function (e) {
+      if (_dragSeekbar) {
+        _dragSeekbar = false
+        if (_videoRunning) {
+          videoElem.play()
+          _videoRunning = false
+        }
+      }
+    })
+
+    document.addEventListener('mousemove', function (e) {
+      if (_dragSeekbar) {
+        // Event for tooltip
+        let width = e.layerX,
+          seekbarWidth = _getSeekbarWidth(),
+          duration = videoElem.duration;
+
+        tooltipTime = width / seekbarWidth * duration;
+
+        // Event for seekbar change time
+        if (_dragSeekbar == true) {
+          if (!_videoRunning) {
+            _videoRunning = !videoElem.paused
+          }
+
+          videoElem.currentTime = tooltipTime
+        }
+      }
     })
 
     // mediaContainer.removeEventListener('mouseleave', function () {
@@ -186,7 +231,7 @@ function VideoPlayer() {
     // Change Video title
     document.querySelector('input[name="video-title"]').addEventListener('input', function (e) {
       let val = e.target.value
-      document.querySelector('#your-video .video-title').innerHTML = val
+      document.querySelector(options.queryId + ' .video-title').innerHTML = val
       document.title = val || options.defaultTitle
     })
 
@@ -194,13 +239,9 @@ function VideoPlayer() {
     // Change thumbnail for video
     document.querySelector('input[name="thumbnail"]').addEventListener('change', function (e) {
       if (e.target.files && e.target.files[0]) {
+        _selectedImage = URL.createObjectURL(e.target.files[0])
 
-        _selectedImage = []; // Clear old data in selected image
-        let length = e.target.files.length > 4 ? 4 : e.target.files.length
-        for (let i = 0; i < length; i++) {
-          _selectedImage.push(URL.createObjectURL(e.target.files[i]))
-        }
-        if (Object.keys(_savedElem).length > 0) { // Thumbnail's showing
+        if (options.isAddThumbnail) { // Thumbnail's showing
           _removeAllThumbnail()
           _addThumbnail({ thumbnail: _selectedImage })
         }
@@ -210,8 +251,7 @@ function VideoPlayer() {
     })
 
     document.querySelector('input[name="video"]').addEventListener('change', function (e) {
-      if (e.target.files && e.target.files[0]) {
-        _selectedVideo = URL.createObjectURL(e.target.files[0])
+      if (e.target?.files && e.target.files[0]) {
 
         let videoCheck = document.createElement('video');
         videoCheck.preload = 'metadata';
@@ -225,10 +265,10 @@ function VideoPlayer() {
             return;
           } else if (videoCheck.duration > 180) {
             alert("Invalid Video! video is less more than 3 minutes");
-          }
-          else {
-
+          } else {
+            _selectedVideo = URL.createObjectURL(e.target.files[0])
             videoElem.setAttribute('src', _selectedVideo)
+            videoElem.pause()
           }
         }
 
@@ -247,29 +287,27 @@ function VideoPlayer() {
     })
 
     document.querySelector('input[name="duration_show"]').addEventListener('change', function (e) {
+      let val = parseFloat(this.value)
+
       if (videoElem.currentTime > options.redDotTime) {
-        let val = parseFloat(this.value)
         // new value will extend show
-        if (_intervalCount<  val) {
+        if (_intervalCount < val) {
           // thumbnail is showing (Object.keys(_savedElem).length > 0)=> ignore 
           // thumbnail was hidden => add thumbnail
           if (Object.keys(_savedElem).length == 0) {
-            console.log('need add');
-            _addThumbnail({elemId: 'thumbnail-extended', thumbnail: _selectedImage || options.defaultThumbnail })
+            _addThumbnail({ elemId: 'thumbnail-extended', thumbnail: _selectedImage || options.defaultThumbnail })
           }
         } else if (_intervalCount >= val) {
-          console.log('need remove');
           _removeAllThumbnail()
-        } else {
-          console.log('dahdahjd');
         }
       }
+      options.thumbnailDisplayDuration = val;
     })
   }
 
   function _addRedDot() {
     // Create indicator red dot
-    document.querySelector('#your-video .group-media__control .group-media__control-indicator')?.remove()
+    document.querySelector(options.queryId + ' .group-media__control .group-media__control-indicator')?.remove()
 
     let indicator = document.createElement('span');
     let offsetLeft = options.redDotTime / videoElem.duration * _getSeekbarWidth() - 4; // red-dot css has width = 8px
@@ -280,54 +318,32 @@ function VideoPlayer() {
 
   function _addThumbnail({ elemId, thumbnail }) {
     if (!elemId) elemId = 'img__' + (Math.random().toString().replace('.', ''));
-    if (!thumbnail) thumbnail = options.defaultThumbnail;
-    console.log(elemId);
-    _savedElem[elemId] = {
-      thumbnail,
-      timeout: setInterval(function () {
-        if (_intervalCount >= options.thumbnailDisplayDuration || _intervalCount >= videoElem.duration - 2) {
-          _removeThumbnail(elemId)
-        } else {
-          if (!videoElem.paused) {
-            _intervalCount++;
-          }
-        }
-      }, 1000)
-    }
+    if (!thumbnail || typeof thumbnail != 'string') thumbnail = options.defaultThumbnail;
+    _savedElem[elemId] = thumbnail
+
 
     //Insert thumbnail to video
-    let thumbnailsContainer = document.querySelector('#your-video .group-media__thumbnails')
+    let thumbnailsContainer = document.querySelector(options.queryId + ' .group-media__thumbnails')
     if (!thumbnailsContainer) {
-      let temp = document.createElement('div')
+      thumbnailsContainer = document.createElement('div')
       temp.classList.add('group-media__thumbnails')
       containerElem.prepend(temp)
     }
 
-    function addImage(id, image) {
-      let thumbnailElem = document.createElement('div')
-      thumbnailElem.id = id
-      thumbnailElem.classList.add('thumbnail-item')
-      thumbnailElem.innerHTML = `<img src="${image}">`
+    let thumbnailElem = document.createElement('div')
+    thumbnailElem.id = elemId
+    thumbnailElem.classList.add('thumbnail-item')
+    thumbnailElem.innerHTML = `<img src="${thumbnail}">`
 
-      document.querySelector('#your-video .group-media__thumbnails').append(thumbnailElem)
-    }
-
-    if (thumbnail instanceof Array) {
-      thumbnail.forEach((item, i) => {
-        addImage(elemId + '__' + i, item)
-      })
-
-    } else if (typeof thumbnail == 'string') {
-      addImage(elemId, thumbnail)
-    }
+    document.querySelector(options.queryId + ' .group-media__thumbnails').append(thumbnailElem)
   }
 
   function _showControl(val) {
     let elems = [
-      '#your-video .video-title',
-      '#your-video .group-media__control',
-      '#your-video .group-media-shadow--bottom',
-      '#your-video .group-media-shadow--top'
+      options.queryId + ' .video-title',
+      options.queryId + ' .group-media__control',
+      options.queryId + ' .group-media-shadow--bottom',
+      options.queryId + ' .group-media-shadow--top'
     ]
     if (val) {
       elems.forEach(elem => {
@@ -348,11 +364,11 @@ function VideoPlayer() {
       width = _getSeekbarWidth(),
       currentWidth = current / duration * width + 'px';
 
-    document.querySelector('#your-video .group-media__control-timer').style.width = currentWidth
-    document.querySelector('#your-video .video-timer__video-length').innerHTML = _formatTime(duration)
-    document.querySelector('#your-video .video-timer__current').innerHTML = _formatTime(current)
+    document.querySelector(options.queryId + ' .group-media__control-timer').style.width = currentWidth
+    document.querySelector(options.queryId + ' .video-timer__video-length').innerHTML = _formatTime(duration)
+    document.querySelector(options.queryId + ' .video-timer__current').innerHTML = _formatTime(current)
     if (current != 0) {
-      document.querySelector('#your-video .group-media__control-timer').classList.add('run')
+      document.querySelector(options.queryId + ' .group-media__control-timer').classList.add('run')
     }
   }
 
@@ -366,12 +382,12 @@ function VideoPlayer() {
     if (val < 1) {
       videoElem.volume = 0;
       videoElem.muted = true
-      document.querySelector('#your-video .svg-icon--volume .icon').innerHTML = svg.mute
+      document.querySelector(options.queryId + ' .svg-icon--volume .icon').innerHTML = svg.mute
 
     } else {
       videoElem.volume = Math.round(val) / 10
       videoElem.muted = false
-      document.querySelector('#your-video .svg-icon--volume .icon').innerHTML = svg.sound
+      document.querySelector(options.queryId + ' .svg-icon--volume .icon').innerHTML = svg.sound
     }
   }
 
@@ -392,7 +408,7 @@ function VideoPlayer() {
 
         }, options.buttonPlayCenterDisplayDuration)
       }
-      document.querySelector('#your-video .svg-icon--pause').innerHTML = svg.play
+      document.querySelector(options.queryId + ' .svg-icon--pause').innerHTML = svg.play
 
     } else {
       if (videoControl) {
@@ -406,7 +422,7 @@ function VideoPlayer() {
           button.remove()
         }, options.buttonPlayCenterDisplayDuration)
       }
-      document.querySelector('#your-video .svg-icon--pause').innerHTML = svg.pause
+      document.querySelector(options.queryId + ' .svg-icon--pause').innerHTML = svg.pause
     }
   }
 
@@ -422,7 +438,11 @@ function VideoPlayer() {
         videoFrame.msRequestFullscreen();
       }
 
-      document.querySelector('#your-video .svg-icon--fullscreen').innerHTML = svg.closeFullscreen
+      document.querySelector(options.queryId + ' .svg-icon--fullscreen').innerHTML = svg.closeFullscreen
+
+      if (window.innerWidth < ScreenBreakPoint.md) {
+        screen.orientation.lock("landscape");
+      }
 
     } else {
       if (document.exitFullscreen) {
@@ -433,7 +453,11 @@ function VideoPlayer() {
         document.msExitFullscreen();
       }
 
-      document.querySelector('#your-video .svg-icon--fullscreen').innerHTML = svg.fullscreen
+      document.querySelector(options.queryId + ' .svg-icon--fullscreen').innerHTML = svg.fullscreen
+
+      if (window.innerWidth < ScreenBreakPoint.md) {
+        screen.orientation.lock("portrait");
+      }
 
     }
   }
