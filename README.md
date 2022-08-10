@@ -25,14 +25,24 @@ Note:
 - If you want to change thumbnail:
   1. Open file **main.js** to edit
   2. Search `defaultThumbnail:` (Line 22)
-  3. Replace with
+  3. Replace with your link
 
-  ```js
-    // Have 1 image:
-    defaultThumbnail: '<your-thumbnail>',
-
-    // Have many thumbnails:
-    defaultThumbnail: ['<your-thumbnail1>', '<your-thumbnail2>', '<your-thumbnail3>'],
-  ```
   or You replace the **thumb1.png** file by your image with same name
   or You can select file input [**Thumbnail**] in Form
+
+<br/>
+
+- If yout want to change time to show thumbnail:
+  1. Open file **main.js** to edit
+  2. Search `redDotTime:` (Line 35)
+  3. Replace with your time
+
+  or You can change input [**Thumbnail Show At (Second)**] in Form
+
+
+- If yout want to change duration time, that thumbnail will be disapeared:
+  1. Open file **main.js** to edit
+  2. Search `thumbnailDisplayDuration:` (Line 36)
+  3. Replace with your time
+
+  or You can change input [**Thumbnail Show Duration (Second)**] in Form
